@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Popkid Premium | Cinema Pro Max</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;600;700&display=swap');
+        
+        :root { --accent: #ff0000; --glass: rgba(255, 255, 255, 0.04); }
+        body { background: #000; color: #fff; font-family: 'SF Pro Display', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        .liquid-glass { background: var(--glass); backdrop-filter: saturate(180%) blur(25px); -webkit-backdrop-filter: saturate(180%) blur(25px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        .chip { flex: 0 0 auto; padding: 10px 22px; border-radius: 16px; background: #111; border: 1px solid #222; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .chip.active { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 20px rgba(255, 0, 0, 0.3); }
+
+        #watchPanel { transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1); position: fixed; inset: 0; z-index: 2000; background: #000; overflow-y: auto; }
+        #watchPanel.active { transform: translateY(0); }
+
+        .ep-card { background: rgba(255,255,255,0.03); border-radius: 20px; transition: 0.3s; }
+        .ep-card:hover { background: rgba(255,255,255,0.08); }
+        .player-box { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 0 0 30px 30px; }
+    </style>
+</head>
+<body>
+
+    <nav class="fixed top-0 w-full z-[1000] liquid-glass border-none pt-6 pb-4">
+        <div class="px-6 flex items-center gap-4 mb-5">
+            <div class="relative flex-1">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"></i>
+                <input id="searchBox" onkeyup="searchContent()" type="text" placeholder="Search Movies & Series..." class="w-full bg-[#111] pl-12 pr-4 py-3.5 rounded-2xl border border-white/5 focus:outline-none focus:ring-1 focus:ring-white/20">
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-[#111] flex items-center justify-center text-red-600"><i class="fa-solid fa-clapperboard"></i></div>
+        </div>
+
+        <div class="flex gap-3 overflow-x-auto no-scrollbar px-6" id="genreList">
+            <div class="chip active" onclick="filterBy(this, 'all')">Trending</div>
+            <div class="chip" onclick="filterBy(this, 16)">Anime</div>
+            <div class="chip" onclick="filterBy(this, 28)">Action</div>
+            <div class="chip" onclick="filterBy(this, 878)">Sci-Fi</div>
+            <div class="chip" onclick="filterBy(this, 27)">Horror</div>
+        </div>
+    </nav>
+
+    <main class="pt-44 px-6 pb-20">
+        <div id="continueSection" class="hidden mb-10">
+            <h3 class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-4">Continue Watching</h3>
+            <div id="resumeCard" class="w-full max-w-sm"></div>
+        </div>
+
+        <h3 id="listTitle" class="text-xl font-bold mb-6 tracking-tight">New Releases</h3>
+        <div id="mainGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5"></div>
+    </main>
+
+    <div id="watchPanel" class="hidden flex-col">
+        <button onclick="closeWatch()" class="fixed top-8 left-8 z-[3000] w-12 h-12 rounded-full liquid-glass flex items-center justify-center"><i class="fa-solid fa-chevron-down"></i></button>
+        <div id="playerContainer"></div>
+    </div>
+
+    <script>
+        const KEY = '29e4dc2f40c6d85baa182bb1e1f38911';
+        const IMG = 'https://image.tmdb.org/t/p/w500';
+
+        // 1. CONTINUE WATCHING LOGIC
+        function saveProgress(item, type) {
+            localStorage.setItem('lastWatched', JSON.stringify({ id: item.id, type: type, name: item.title || item.name, poster: item.poster_path }));
+            loadContinue();
+        }
+
+        function loadContinue() {
+            const last = JSON.parse(localStorage.getItem('lastWatched'));
+            if (last) {
+                document.getElementById('continueSection').classList.remove('hidden');
+                document.getElementById('resumeCard').innerHTML = `
+                    <div onclick="openWatch(${last.id}, '${last.type}')" class="flex gap-4 items-center liquid-glass p-3 rounded-2xl cursor-pointer">
+                        <img src="${IMG + last.poster}" class="w-14 h-14 rounded-xl object-cover">
+                        <div><p class="text-sm font-bold truncate w-40">${last.name}</p><p class="text-[10px] text-red-500 font-bold">RESUME SHOW</p></div>
+                        <i class="fa-solid fa-play ml-auto mr-4 text-white"></i>
+                    </div>`;
+            }
+        }
+
+        // 2. MAIN FETCH
+        async function loadUI(url, title = "New Releases") {
+            document.getElementById('listTitle').innerText = title;
+            const res = await fetch(url);
+            const data = await res.json();
+            const grid = document.getElementById('mainGrid');
+            grid.innerHTML = data.results.map(item => {
+                if(!item.poster_path) return '';
+                const type = item.media_type || (item.title ? 'movie' : 'tv');
+                return `
+                <div onclick="openWatch(${item.id}, '${type}')" class="relative rounded-2xl overflow-hidden cursor-pointer group">
+                    <img src="${IMG + item.poster_path}" class="w-full h-64 object-cover transform group-hover:scale-105 transition-transform duration-500">
+                    <div class="absolute bottom-0 w-full p-4 bg-gradient-to-t from-black via-black/80 to-transparent">
+                        <h4 class="text-[11px] font-bold truncate">${item.title || item.name}</h4>
+                        <p class="text-[9px] text-zinc-400 mt-1 uppercase tracking-tighter">${type}</p>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // 3. THE WATCH ENGINE (EPISODES & SEASONS)
+        async function openWatch(id, type) {
+            const res = await fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${KEY}&append_to_response=videos`);
+            const item = await res.json();
+            saveProgress(item, type);
+
+            const panel = document.getElementById('watchPanel');
+            panel.classList.remove('hidden');
+            setTimeout(() => panel.classList.add('active'), 10);
+
+            let html = `
+                <iframe id="mainPlayer" src="https://vidsrc.to/embed/${type}/${id}" class="player-box" frameborder="0" allowfullscreen></iframe>
+                <div class="p-8">
+                    <h2 class="text-3xl font-bold mb-2">${item.title || item.name}</h2>
+                    <div class="flex gap-4 mb-6 text-xs text-zinc-500 font-bold">
+                        <span class="text-red-600">PREMIUM</span> <span>${(item.release_date || item.first_air_date || '').split('-')[0]}</span> <span>HD</span>
+                    </div>
+                    <p class="text-sm text-zinc-400 leading-relaxed mb-8">${item.overview}</p>
+                    <div class="flex gap-4 mb-10">
+                        <button class="flex-1 bg-white text-black py-4 rounded-2xl font-bold">PLAY NOW</button>
+                        <a href="https://dl.vidsrc.to/get/${id}" target="_blank" class="w-16 liquid-glass rounded-2xl flex items-center justify-center"><i class="fa-solid fa-download"></i></a>
+                    </div>`;
+
+            if (type === 'tv') {
+                html += `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-zinc-500">All Episodes</h3>
+                    <select onchange="syncEpisodes(${id}, this.value)" class="bg-[#111] text-xs px-4 py-2 rounded-xl outline-none border border-white/5">
+                        ${item.seasons.filter(s => s.season_number > 0).map(s => `<option value="${s.season_number}">${s.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div id="epGrid" class="space-y-4 pb-20"></div>`;
+                setTimeout(() => syncEpisodes(id, 1), 100);
+            }
+            document.getElementById('playerContainer').innerHTML = html + `</div>`;
+        }
+
+        async function syncEpisodes(seriesId, sNum) {
+            const list = document.getElementById('epGrid');
+            list.innerHTML = `<div class="animate-pulse text-zinc-700 text-center py-10 text-xs">Fetching Episodes...</div>`;
+            const res = await fetch(`https://api.themoviedb.org/3/tv/${seriesId}/season/${sNum}?api_key=${KEY}`);
+            const data = await res.json();
+            list.innerHTML = data.episodes.map(ep => `
+                <div onclick="switchEp(${seriesId}, ${sNum}, ${ep.episode_number})" class="ep-card flex gap-4 p-3 cursor-pointer items-center">
+                    <div class="w-28 h-16 bg-zinc-900 rounded-xl overflow-hidden flex-shrink-0">
+                        <img src="${ep.still_path ? IMG + ep.still_path : ''}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="flex-1 overflow-hidden">
+                        <p class="text-sm font-bold truncate">E${ep.episode_number}: ${ep.name}</p>
+                        <p class="text-[10px] text-zinc-500 line-clamp-2 mt-1">${ep.overview || 'Description not available.'}</p>
+                    </div>
+                </div>`).join('');
+        }
+
+        function switchEp(id, s, e) {
+            document.getElementById('mainPlayer').src = `https://vidsrc.to/embed/tv/${id}/${s}/${e}`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function filterBy(el, id) {
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            if(id === 'all') loadUI(`https://api.themoviedb.org/3/trending/all/day?api_key=${KEY}`);
+            else loadUI(`https://api.themoviedb.org/3/discover/movie?api_key=${KEY}&with_genres=${id}`, "Filtered Results");
+        }
+
+        async function searchContent() {
+            const q = document.getElementById('searchBox').value;
+            if(q.length > 2) loadUI(`https://api.themoviedb.org/3/search/multi?api_key=${KEY}&query=${q}`, `Results for "${q}"`);
+            else if(q === '') loadUI(`https://api.themoviedb.org/3/trending/all/day?api_key=${KEY}`);
+        }
+
+        function closeWatch() {
+            const p = document.getElementById('watchPanel');
+            p.classList.remove('active');
+            setTimeout(() => { p.classList.add('hidden'); document.getElementById('playerContainer').innerHTML = ''; }, 500);
+        }
+
+        loadUI(`https://api.themoviedb.org/3/trending/all/day?api_key=${KEY}`);
+        loadContinue();
+    </script>
+</body>
+</html>
