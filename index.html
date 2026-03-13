@@ -3,205 +3,267 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POPKID 7.0 | Professional Media Hub</title>
+    <title>POPKID 7.0 | Pro Media Hub</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#08080a">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
         body { background: #08080a; color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        #watchPanel, #searchOverlay { transform: translateY(100%); transition: 0.5s cubic-bezier(0.19, 1, 0.22, 1); position: fixed; inset: 0; z-index: 5000; background: #000; overflow-y: auto; }
-        #watchPanel.active, #searchOverlay.active { transform: translateY(0); }
-        .live-dot { animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.2); } }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* Panels */
+        #movieWatch, #musicWatch, #searchOverlay { 
+            transform: translateY(100%); 
+            transition: 0.5s cubic-bezier(0.19, 1, 0.22, 1); 
+            position: fixed; inset: 0; z-index: 5000; background: #000; overflow-y: auto; 
+        }
+        .active-panel { transform: translateY(0) !important; }
+        
+        .tab-btn { font-size: 10px; font-weight: 800; color: #555; transition: 0.3s; }
+        .tab-active { color: #ef4444; }
+
+        .ep-card { background: rgba(255,255,255,0.03); border-radius: 20px; transition: 0.3s; }
+        .ep-card:active { background: rgba(255,255,255,0.1); }
     </style>
 </head>
-<body class="pb-32">
+<body class="pb-24">
 
     <nav class="fixed top-0 w-full z-[1000] glass border-none px-6 py-4 flex justify-between items-center">
-        <div class="flex items-center gap-2">
-            <div class="w-9 h-9 bg-red-700 rounded-xl flex items-center justify-center font-bold text-sm">PK</div>
+        <div class="flex items-center gap-2" onclick="location.reload()">
+            <div class="w-9 h-9 bg-red-700 rounded-xl flex items-center justify-center font-bold text-sm shadow-lg">PK</div>
             <h1 class="text-xl font-bold tracking-tighter uppercase">Popkid <span class="text-[10px] text-red-500 font-bold ml-1">7.0</span></h1>
         </div>
-        <div class="flex gap-3">
-            <button onclick="toggleSearch(true)" class="w-11 h-11 rounded-2xl flex items-center justify-center bg-white/5 border border-white/5"><i class="fa-solid fa-magnifying-glass text-sm"></i></button>
+        <div class="flex gap-4">
+            <button onclick="togglePanel('searchOverlay', true)" class="w-11 h-11 rounded-2xl flex items-center justify-center bg-white/5 border border-white/5"><i class="fa-solid fa-magnifying-glass text-sm"></i></button>
             <button class="w-11 h-11 rounded-2xl flex items-center justify-center bg-white/5 border border-white/5"><i class="fa-solid fa-bars-staggered text-sm"></i></button>
         </div>
     </nav>
 
-    <div id="searchOverlay" class="p-8">
-        <div class="flex justify-between items-center mb-8 pt-4">
-            <h2 class="text-3xl font-bold tracking-tight">Search Movies</h2>
-            <button onclick="toggleSearch(false)" class="bg-red-600/10 text-red-500 px-5 py-2 rounded-xl font-bold text-sm">Back to Home</button>
-        </div>
-        <input id="searchBox" onkeyup="handleSearch()" type="text" placeholder="Start typing to search..." class="w-full bg-zinc-900 border border-white/5 p-4 rounded-2xl outline-none focus:ring-1 focus:ring-red-600/50">
-        <div id="searchGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-8"></div>
+    <div class="fixed top-20 w-full z-[900] glass border-none px-6 py-2 flex gap-8 justify-center">
+        <button id="movieTab" onclick="switchMainTab('movies')" class="tab-btn tab-active py-2 uppercase">Movies</button>
+        <button id="musicTab" onclick="switchMainTab('music')" class="tab-btn py-2 uppercase">Music Hub</button>
+        <button id="libraryTab" onclick="switchMainTab('library')" class="tab-btn py-2 uppercase">Offline</button>
     </div>
 
-    <header id="hero" class="h-[60vh] relative flex items-end p-8 bg-cover bg-center transition-all duration-700">
-        <div class="w-full relative z-10">
-            <div class="flex gap-2 mb-4">
-                <span class="bg-red-600 px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">Top Trending</span>
-                <span id="heroYear" class="bg-white/10 px-3 py-1 rounded-lg text-[10px] font-bold">2026</span>
+    <main id="movieView" class="pt-36 px-6">
+        <header id="hero" class="h-[50vh] relative flex items-end p-8 rounded-[40px] overflow-hidden bg-cover bg-center mb-10 transition-all duration-700">
+            <div class="relative z-10 w-full">
+                <h2 id="heroTitle" class="text-3xl font-black mb-4 truncate italic uppercase tracking-tighter">Popkid Streaming</h2>
+                <button id="heroPlay" class="w-full bg-red-600 py-4 rounded-2xl font-bold shadow-lg shadow-red-600/20 active:scale-95 transition-all"><i class="fa-solid fa-play mr-2"></i> Watch Now</button>
             </div>
-            <h2 id="heroTitle" class="text-4xl md:text-5xl font-extrabold mb-6">Syncing...</h2>
-            <div class="flex gap-3">
-                <button id="heroPlayBtn" class="flex-1 bg-red-600 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 active:scale-95 transition-all"><i class="fa-solid fa-play"></i> Watch Now</button>
-                <button class="w-14 h-14 glass rounded-2xl flex items-center justify-center text-lg"><i class="fa-solid fa-plus"></i></button>
-            </div>
-        </div>
-        <div class="absolute inset-0 bg-gradient-to-t from-[#08080a] via-[#08080a]/40 to-transparent"></div>
-    </header>
+            <div class="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
+        </header>
 
-    <section class="p-6">
-        <div class="flex justify-between items-center mb-5">
-            <div class="flex items-center gap-2"><i class="fa-solid fa-football text-green-500"></i> <h3 class="font-bold text-sm uppercase tracking-widest text-zinc-400">Sports Live</h3></div>
-            <span class="text-xs text-red-500 font-bold">View All</span>
-        </div>
-        <div class="flex gap-4 overflow-x-auto no-scrollbar">
-            <div class="flex-shrink-0 w-64 glass p-5 rounded-[32px]">
-                <div class="flex justify-between items-center mb-4">
-                    <span class="text-[9px] font-extrabold bg-red-600/20 text-red-500 px-2 py-1 rounded-md flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-red-500 live-dot"></div> Live</span>
-                    <span class="text-[10px] text-zinc-500 font-bold">85'</span>
-                </div>
-                <div class="flex justify-between items-center font-bold text-sm mb-3"><span>FAR Rabat</span> <span class="text-red-500">1</span></div>
-                <div class="flex justify-between items-center font-bold text-sm"><span>Pyramids</span> <span class="text-zinc-500">0</span></div>
-            </div>
-        </div>
-    </section>
+        <section class="mb-10">
+            <h3 class="font-black text-xl mb-6 italic text-zinc-400">MOST PLAYED</h3>
+            <div id="movieGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5"></div>
+        </section>
+    </main>
 
-    <section class="p-6 mx-5 rounded-[40px] bg-gradient-to-br from-indigo-900/30 to-purple-900/30 text-center border border-white/5">
-        <div class="grid grid-cols-3 gap-5 mb-8 place-items-center">
-            <div class="w-14 h-14 bg-red-600 rounded-2xl flex items-center justify-center"><i class="fa-brands fa-youtube"></i></div>
-            <div class="w-14 h-14 bg-purple-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-music"></i></div>
-            <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-clapperboard"></i></div>
-            <div class="w-14 h-14 bg-green-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-download"></i></div>
-            <div class="w-14 h-14 bg-orange-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-microchip"></i></div>
-            <div class="w-14 h-14 bg-pink-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-headphones"></i></div>
+    <main id="musicView" class="hidden pt-36 px-6 pb-20">
+        <div class="glass p-2 rounded-2xl flex items-center border border-white/10 mb-10">
+            <input type="text" id="musicQuery" placeholder="Search YouTube & Music..." class="flex-1 bg-transparent p-4 outline-none text-sm">
+            <button onclick="handleMusicSearch()" class="bg-red-600 px-6 py-4 rounded-xl font-bold text-xs uppercase">Search</button>
         </div>
-        <h3 class="text-2xl font-bold mb-2">Media Hub <span class="bg-red-500 text-[9px] px-2 py-1 rounded-md ml-1">NEW</span></h3>
-        <p class="text-zinc-500 text-xs px-4 mb-8">Stream DJ Afro, YouTube, and Music all in one app.</p>
-        <button class="bg-white/5 w-full py-4 rounded-2xl font-bold text-sm border border-white/10 active:scale-95 transition-all">Explore Media Hub</button>
-    </section>
+        <div id="musicGrid" class="grid grid-cols-2 md:grid-cols-4 gap-5"></div>
+    </main>
 
-    <section class="p-6">
-        <h3 class="font-black text-2xl mb-6 italic text-zinc-300">MOST PLAYED</h3>
-        <div id="mostPlayed" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5"></div>
-    </section>
+    <main id="libraryView" class="hidden pt-36 px-6">
+        <h3 class="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-8 italic">Your Offline Collection</h3>
+        <div id="libraryList" class="grid grid-cols-2 md:grid-cols-4 gap-5"></div>
+    </main>
 
-    <div id="watchPanel">
-        <div class="sticky top-0 z-[6000] p-6 flex justify-between">
-            <button onclick="closeWatch()" class="w-12 h-12 rounded-full glass flex items-center justify-center text-white"><i class="fa-solid fa-xmark"></i></button>
-            <button class="w-12 h-12 rounded-full glass flex items-center justify-center text-white"><i class="fa-solid fa-share-nodes"></i></button>
+    <div id="searchOverlay" class="p-8 pt-20">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl font-black">Search Movies</h2>
+            <button onclick="togglePanel('searchOverlay', false)" class="bg-white/5 px-4 py-2 rounded-xl text-xs font-bold uppercase">Back</button>
         </div>
-        <div id="playerArea" class="-mt-24"></div>
+        <input id="mainSearch" onkeyup="handleMainSearch()" type="text" placeholder="Start typing to search..." class="w-full bg-zinc-900 p-5 rounded-3xl outline-none border border-white/5 focus:border-red-600/50 transition-all">
+        <div id="searchResultGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-8"></div>
     </div>
 
-    <button id="installBtn" class="hidden fixed bottom-6 left-6 right-6 bg-green-600 py-4 rounded-2xl font-bold z-[4000] shadow-2xl active:scale-95 transition-all uppercase text-sm tracking-widest">Download Popkid 7.0 App</button>
+    <div id="movieWatch">
+        <div class="p-6 flex justify-between items-center fixed top-0 w-full z-[6000]">
+            <button onclick="togglePanel('movieWatch', false)" class="w-12 h-12 rounded-full glass flex items-center justify-center"><i class="fa-solid fa-chevron-down"></i></button>
+            <a id="movieDl" href="#" target="_blank" class="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center shadow-lg"><i class="fa-solid fa-download"></i></a>
+        </div>
+        <div id="moviePlayerArea"></div>
+    </div>
+
+    <div id="musicWatch">
+        <div class="p-6 flex justify-between items-center fixed top-0 w-full z-[6000]">
+            <button onclick="togglePanel('musicWatch', false)" class="w-12 h-12 rounded-full glass flex items-center justify-center"><i class="fa-solid fa-chevron-down"></i></button>
+            <button id="musicSaveBtn" class="bg-blue-600 px-6 py-3 rounded-xl font-bold text-[10px] uppercase">Save Offline</button>
+        </div>
+        <div class="pt-24 px-6 max-w-2xl mx-auto">
+            <video id="musicPlayer" class="w-full aspect-video rounded-[30px] bg-zinc-900 shadow-2xl" controls></video>
+            <h2 id="musicWatchTitle" class="text-2xl font-bold mt-8">Media Loading...</h2>
+        </div>
+    </div>
 
     <script>
-        const API_KEY = '29e4dc2f40c6d85baa182bb1e1f38911';
+        const TMDB_KEY = '29e4dc2f40c6d85baa182bb1e1f38911';
+        const YT_SEARCH = "https://api.yupra.my.id/api/search/youtube?q=";
+        const YT_DL = "https://jawad-tech.vercel.app/download/ytdl?url=";
         const IMG = 'https://image.tmdb.org/t/p/w500';
+        let db;
 
-        // 1. PWA INSTALL LOGIC
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('installBtn').classList.remove('hidden');
-        });
+        // DB INIT
+        const request = indexedDB.open("PopkidFinalDB", 1);
+        request.onupgradeneeded = (e) => e.target.result.createObjectStore("videos", { keyPath: "id" });
+        request.onsuccess = (e) => { db = e.target.result; renderLibrary(); };
 
-        document.getElementById('installBtn').addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') document.getElementById('installBtn').classList.add('hidden');
-                deferredPrompt = null;
-            }
-        });
+        // TABS
+        function switchMainTab(tab) {
+            document.getElementById('movieView').classList.toggle('hidden', tab !== 'movies');
+            document.getElementById('musicView').classList.toggle('hidden', tab !== 'music');
+            document.getElementById('libraryView').classList.toggle('hidden', tab !== 'library');
+            document.getElementById('movieTab').classList.toggle('tab-active', tab === 'movies');
+            document.getElementById('musicTab').classList.toggle('tab-active', tab === 'music');
+            document.getElementById('libraryTab').classList.toggle('tab-active', tab === 'library');
+            if(tab === 'music') loadMusicTrending();
+        }
 
-        // 2. CORE ENGINE
-        async function init() {
-            const res = await fetch(`https://api.themoviedb.org/3/trending/all/day?api_key=${API_KEY}`);
+        function togglePanel(id, show) {
+            document.getElementById(id).classList.toggle('active-panel', show);
+            document.body.style.overflow = show ? 'hidden' : 'auto';
+        }
+
+        // MOVIE LOGIC (RESTORED FULL FUNCTIONALITY)
+        async function initMovies() {
+            const res = await fetch(`https://api.themoviedb.org/3/trending/all/day?api_key=${TMDB_KEY}`);
             const data = await res.json();
-            const topItem = data.results[0];
-            
-            document.getElementById('hero').style.backgroundImage = `linear-gradient(to top, #08080a, transparent), url(https://image.tmdb.org/t/p/original${topItem.backdrop_path})`;
-            document.getElementById('heroTitle').innerText = topItem.title || topItem.name;
-            document.getElementById('heroYear').innerText = (topItem.release_date || topItem.first_air_date || '2026').split('-')[0];
-            document.getElementById('heroPlayBtn').onclick = () => openWatch(topItem.id, topItem.media_type || 'movie');
-
-            renderGrid(data.results.slice(1, 15), 'mostPlayed');
+            const top = data.results[0];
+            document.getElementById('hero').style.backgroundImage = `linear-gradient(to top, #000, transparent), url(https://image.tmdb.org/t/p/original${top.backdrop_path})`;
+            document.getElementById('heroTitle').innerText = top.title || top.name;
+            document.getElementById('heroPlay').onclick = () => openMovieWatch(top.id, top.media_type || 'movie');
+            renderMovieGrid(data.results.slice(1, 13), 'movieGrid');
         }
 
-        function renderGrid(items, targetId) {
-            const container = document.getElementById(targetId);
-            container.innerHTML = items.map(item => {
-                if(!item.poster_path) return '';
-                const type = item.media_type || (item.title ? 'movie' : 'tv');
-                return `
-                <div onclick="openWatch(${item.id}, '${type}')" class="glass rounded-[32px] p-3 border-none active:scale-95 transition-all">
-                    <img src="${IMG + item.poster_path}" class="w-full h-56 object-cover rounded-[24px] mb-3">
-                    <h4 class="text-xs font-bold truncate px-1">${item.title || item.name}</h4>
-                    <div class="flex justify-between items-center text-[10px] mt-2 px-1 text-zinc-500">
-                        <span>${(item.release_date || item.first_air_date || '2026').split('-')[0]}</span>
-                        <span class="text-yellow-500 font-bold">⭐ ${item.vote_average.toFixed(1)}</span>
-                    </div>
-                </div>`;
-            }).join('');
-        }
-
-        async function openWatch(id, type) {
-            const res = await fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${API_KEY}&append_to_response=videos`);
-            const item = await res.json();
-            document.getElementById('watchPanel').classList.add('active');
-            document.body.style.overflow = 'hidden';
-
-            let html = `
-                <iframe id="videoPlayer" src="https://vidsrc.to/embed/${type}/${id}" class="w-full aspect-video rounded-b-[40px]" frameborder="0" allowfullscreen></iframe>
-                <div class="p-8">
-                    <h2 class="text-3xl font-black mb-4">${item.title || item.name}</h2>
-                    <p class="text-xs text-zinc-500 mb-8 leading-relaxed">${item.overview}</p>
-                    <div class="flex gap-4 mb-10">
-                        <button class="flex-1 bg-white text-black py-4 rounded-2xl font-black text-sm active:scale-95 transition-all">PLAY NOW</button>
-                        <a href="https://dl.vidsrc.to/get/${id}" target="_blank" class="w-16 glass rounded-2xl flex items-center justify-center"><i class="fa-solid fa-download"></i></a>
-                    </div>`;
-
-            if(type === 'tv') {
-                html += `<div class="flex justify-between mb-4"><h3 class="font-bold text-sm">Episodes</h3><select onchange="loadEps(${id}, this.value)" class="bg-zinc-900 border border-white/5 p-2 rounded-xl text-xs outline-none">${item.seasons.filter(s => s.season_number > 0).map(s => `<option value="${s.season_number}">${s.name}</option>`).join('')}</select></div><div id="epContainer" class="space-y-4 pb-20"></div>`;
-                setTimeout(() => loadEps(id, 1), 100);
-            }
-            document.getElementById('playerArea').innerHTML = html + `</div>`;
-        }
-
-        async function loadEps(id, s) {
-            const res = await fetch(`https://api.themoviedb.org/3/tv/${id}/season/${s}?api_key=${API_KEY}`);
-            const data = await res.json();
-            document.getElementById('epContainer').innerHTML = data.episodes.map(ep => `
-                <div onclick="switchVid(${id}, ${s}, ${ep.episode_number})" class="glass p-4 rounded-[24px] flex gap-4 items-center cursor-pointer">
-                    <img src="${ep.still_path ? IMG + ep.still_path : ''}" class="w-20 h-12 rounded-xl object-cover">
-                    <div class="flex-1 overflow-hidden"><p class="text-xs font-bold truncate">${ep.name}</p><p class="text-[10px] text-zinc-600">Episode ${ep.episode_number}</p></div>
+        function renderMovieGrid(items, targetId) {
+            document.getElementById(targetId).innerHTML = items.map(item => `
+                <div onclick="openMovieWatch(${item.id}, '${item.media_type || (item.title?'movie':'tv')}')" class="glass rounded-[32px] p-3 active:scale-95 transition-all">
+                    <img src="${IMG + item.poster_path}" class="w-full h-48 object-cover rounded-[24px] mb-3 shadow-lg">
+                    <h4 class="text-[10px] font-bold truncate px-1 uppercase tracking-tighter">${item.title || item.name}</h4>
                 </div>`).join('');
         }
 
-        function switchVid(id, s, e) { document.getElementById('videoPlayer').src = `https://vidsrc.to/embed/tv/${id}/${s}/${e}`; window.scrollTo({top:0, behavior:'smooth'}); }
-        function toggleSearch(show) { document.getElementById('searchOverlay').classList.toggle('active', show); }
-        function closeWatch() { document.getElementById('watchPanel').classList.remove('active'); document.body.style.overflow = 'auto'; }
-        
-        async function handleSearch() {
-            const q = document.getElementById('searchBox').value;
+        async function openMovieWatch(id, type) {
+            const res = await fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${TMDB_KEY}&append_to_response=videos`);
+            const item = await res.json();
+            togglePanel('movieWatch', true);
+            document.getElementById('movieDl').href = `https://vidsrc.xyz/download/${type}/${id}`;
+            
+            let html = `
+                <iframe id="moviePlayer" src="https://vidsrc.me/embed/${type}?tmdb=${id}" class="w-full aspect-video rounded-b-[40px] shadow-2xl" frameborder="0" allowfullscreen></iframe>
+                <div class="p-8">
+                    <h2 class="text-3xl font-black mb-2">${item.title || item.name}</h2>
+                    <p class="text-[10px] text-zinc-500 mb-6 uppercase font-bold tracking-widest">${(item.release_date || item.first_air_date || '').split('-')[0]} • HD STREAM</p>
+                    <p class="text-xs text-zinc-400 mb-8 leading-relaxed">${item.overview}</p>
+            `;
+
+            if(type === 'tv') {
+                html += `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-sm tracking-widest uppercase text-zinc-600">Series Seasons</h3>
+                    <select onchange="fetchSeriesEps(${id}, this.value)" class="bg-zinc-900 border border-white/5 p-2 rounded-xl text-xs outline-none">
+                        ${item.seasons.filter(s => s.season_number > 0).map(s => `<option value="${s.season_number}">${s.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div id="epGrid" class="space-y-4 pb-24"></div>`;
+                setTimeout(() => fetchSeriesEps(id, 1), 100);
+            }
+            document.getElementById('moviePlayerArea').innerHTML = html + `</div>`;
+        }
+
+        async function fetchSeriesEps(id, s) {
+            const res = await fetch(`https://api.themoviedb.org/3/tv/${id}/season/${s}?api_key=${TMDB_KEY}`);
+            const data = await res.json();
+            document.getElementById('epGrid').innerHTML = data.episodes.map(ep => `
+                <div onclick="playMovieEp(${id}, ${s}, ${ep.episode_number})" class="glass p-4 rounded-[28px] flex gap-5 items-center ep-card">
+                    <div class="relative w-24 h-14 bg-zinc-900 rounded-2xl overflow-hidden flex-shrink-0">
+                        <img src="${ep.still_path ? IMG + ep.still_path : ''}" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 flex items-center justify-center bg-black/30"><i class="fa-solid fa-play text-[10px]"></i></div>
+                    </div>
+                    <div class="flex-1 overflow-hidden">
+                        <p class="text-[11px] font-black truncate uppercase">${ep.name}</p>
+                        <p class="text-[9px] text-zinc-500 font-bold mt-1">S${s} E${ep.episode_number}</p>
+                    </div>
+                </div>`).join('');
+        }
+
+        function playMovieEp(id, s, e) {
+            document.getElementById('moviePlayer').src = `https://vidsrc.me/embed/tv?tmdb=${id}&season=${s}&episode=${e}`;
+            document.getElementById('movieDl').href = `https://vidsrc.xyz/download/tv/${id}/${s}/${e}`;
+            window.scrollTo({top:0, behavior:'smooth'});
+        }
+
+        // SEARCH (RESTORED SUGGESTIONS)
+        async function handleMainSearch() {
+            const q = document.getElementById('mainSearch').value;
             if(q.length > 2) {
-                const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${q}`);
+                const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&query=${q}`);
                 const data = await res.json();
-                renderGrid(data.results, 'searchGrid');
+                renderMovieGrid(data.results, 'searchResultGrid');
             }
         }
 
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
-        init();
+        // MUSIC & OFFLINE (KEPT YOUR MUSIC FUNCTIONALITY)
+        async function loadMusicTrending() {
+            const res = await axios.get(`${YT_SEARCH}trending music videos 2026`);
+            document.getElementById('musicGrid').innerHTML = res.data.results.map(v => `
+                <div onclick="openMusicWatch('${v.url}')" class="glass p-3 rounded-[32px] active:scale-95 transition-all">
+                    <img src="${v.thumbnail}" class="w-full h-40 object-cover rounded-[24px] mb-3 shadow-lg">
+                    <h4 class="text-[10px] font-bold line-clamp-2 px-1 tracking-tight">${v.title}</h4>
+                </div>`).join('');
+        }
+
+        async function openMusicWatch(url) {
+            togglePanel('musicWatch', true);
+            const res = await axios.get(`${YT_DL}${encodeURIComponent(url)}`);
+            const data = res.data.result;
+            const p = document.getElementById('musicPlayer');
+            p.src = data.mp4;
+            p.poster = data.thumbnail;
+            document.getElementById('musicWatchTitle').innerText = data.title;
+            document.getElementById('musicSaveBtn').onclick = () => saveVid(data.mp4, Date.now(), data.title, data.thumbnail);
+            p.play();
+        }
+
+        async function saveVid(url, id, title, thumb) {
+            const res = await fetch(url);
+            const blob = await res.blob();
+            const tx = db.transaction("videos", "readwrite");
+            tx.objectStore("videos").put({ id, title, data: blob, thumb });
+            tx.oncomplete = () => { renderLibrary(); alert("Saved Offline!"); };
+        }
+
+        function renderLibrary() {
+            db.transaction("videos", "readonly").objectStore("videos").getAll().onsuccess = (e) => {
+                document.getElementById('libraryList').innerHTML = e.target.result.map(v => `
+                    <div class="glass p-4 rounded-[30px] text-center">
+                        <img src="${v.thumb}" class="w-full h-32 object-cover rounded-3xl mb-4">
+                        <h4 class="text-[10px] font-bold truncate mb-4 px-1">${v.title}</h4>
+                        <button onclick="playOffline('${v.id}')" class="w-full bg-red-600 py-3 rounded-2xl text-[9px] font-black uppercase">Play Offline</button>
+                    </div>`).join('');
+            };
+        }
+
+        function playOffline(id) {
+            db.transaction("videos", "readonly").objectStore("videos").get(id).onsuccess = (e) => {
+                const v = e.target.result;
+                togglePanel('musicWatch', true);
+                const p = document.getElementById('musicPlayer');
+                p.src = URL.createObjectURL(v.data);
+                document.getElementById('musicWatchTitle').innerText = v.title + " (OFFLINE)";
+                p.play();
+            };
+        }
+
+        initMovies();
     </script>
 </body>
 </html>
