@@ -4,54 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>POPKID 7.0 | Professional Media Hub</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#08080a">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
         body { background: #08080a; color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        
-        /* Glassmorphism */
         .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        
-        /* Panel Animations */
-        #watchPanel, #searchOverlay { 
-            transform: translateY(100%); 
-            transition: 0.5s cubic-bezier(0.19, 1, 0.22, 1); 
-            position: fixed; inset: 0; z-index: 5000; background: #000; 
-        }
+        #watchPanel, #searchOverlay { transform: translateY(100%); transition: 0.5s cubic-bezier(0.19, 1, 0.22, 1); position: fixed; inset: 0; z-index: 5000; background: #000; overflow-y: auto; }
         #watchPanel.active, #searchOverlay.active { transform: translateY(0); }
-
         .live-dot { animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.2); } }
-        
-        .hub-btn:active { transform: scale(0.9); }
-        .ep-card:active { background: rgba(255,255,255,0.1); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="pb-24">
+<body class="pb-32">
 
     <nav class="fixed top-0 w-full z-[1000] glass border-none px-6 py-4 flex justify-between items-center">
         <div class="flex items-center gap-2">
-            <div class="w-9 h-9 bg-red-700 rounded-xl flex items-center justify-center font-bold text-sm shadow-lg shadow-red-900/20">PK</div>
+            <div class="w-9 h-9 bg-red-700 rounded-xl flex items-center justify-center font-bold text-sm">PK</div>
             <h1 class="text-xl font-bold tracking-tighter uppercase">Popkid <span class="text-[10px] text-red-500 font-bold ml-1">7.0</span></h1>
         </div>
         <div class="flex gap-3">
-            <button onclick="toggleSearch(true)" class="w-11 h-11 rounded-2xl flex items-center justify-center bg-white/5 border border-white/5 active:bg-white/10 transition-all"><i class="fa-solid fa-magnifying-glass text-sm"></i></button>
+            <button onclick="toggleSearch(true)" class="w-11 h-11 rounded-2xl flex items-center justify-center bg-white/5 border border-white/5"><i class="fa-solid fa-magnifying-glass text-sm"></i></button>
             <button class="w-11 h-11 rounded-2xl flex items-center justify-center bg-white/5 border border-white/5"><i class="fa-solid fa-bars-staggered text-sm"></i></button>
         </div>
     </nav>
 
-    <div id="searchOverlay" class="p-8 overflow-y-auto">
+    <div id="searchOverlay" class="p-8">
         <div class="flex justify-between items-center mb-8 pt-4">
             <h2 class="text-3xl font-bold tracking-tight">Search Movies</h2>
-            <button onclick="toggleSearch(false)" class="bg-red-600/10 text-red-500 px-5 py-2 rounded-xl font-bold text-sm border border-red-500/20 active:scale-95 transition-all"><i class="fa-solid fa-arrow-left mr-2"></i> Back</button>
+            <button onclick="toggleSearch(false)" class="bg-red-600/10 text-red-500 px-5 py-2 rounded-xl font-bold text-sm">Back to Home</button>
         </div>
-        <div class="flex gap-2">
-            <input id="searchBox" onkeyup="handleSearch()" type="text" placeholder="Start typing to search..." class="flex-1 bg-zinc-900 border border-white/5 p-4 rounded-2xl outline-none focus:ring-1 focus:ring-red-600/50 transition-all">
-        </div>
-        <div id="searchGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-8">
-            </div>
+        <input id="searchBox" onkeyup="handleSearch()" type="text" placeholder="Start typing to search..." class="w-full bg-zinc-900 border border-white/5 p-4 rounded-2xl outline-none focus:ring-1 focus:ring-red-600/50">
+        <div id="searchGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-8"></div>
     </div>
 
     <header id="hero" class="h-[60vh] relative flex items-end p-8 bg-cover bg-center transition-all duration-700">
@@ -60,10 +47,10 @@
                 <span class="bg-red-600 px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">Top Trending</span>
                 <span id="heroYear" class="bg-white/10 px-3 py-1 rounded-lg text-[10px] font-bold">2026</span>
             </div>
-            <h2 id="heroTitle" class="text-4xl md:text-5xl font-extrabold mb-6 drop-shadow-2xl">Loading...</h2>
+            <h2 id="heroTitle" class="text-4xl md:text-5xl font-extrabold mb-6">Syncing...</h2>
             <div class="flex gap-3">
                 <button id="heroPlayBtn" class="flex-1 bg-red-600 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 active:scale-95 transition-all"><i class="fa-solid fa-play"></i> Watch Now</button>
-                <button class="w-14 h-14 glass rounded-2xl flex items-center justify-center text-lg active:bg-white/10"><i class="fa-solid fa-plus"></i></button>
+                <button class="w-14 h-14 glass rounded-2xl flex items-center justify-center text-lg"><i class="fa-solid fa-plus"></i></button>
             </div>
         </div>
         <div class="absolute inset-0 bg-gradient-to-t from-[#08080a] via-[#08080a]/40 to-transparent"></div>
@@ -75,10 +62,10 @@
             <span class="text-xs text-red-500 font-bold">View All</span>
         </div>
         <div class="flex gap-4 overflow-x-auto no-scrollbar">
-            <div class="flex-shrink-0 w-64 glass p-5 rounded-[32px] border-white/5">
+            <div class="flex-shrink-0 w-64 glass p-5 rounded-[32px]">
                 <div class="flex justify-between items-center mb-4">
-                    <span class="text-[9px] font-extrabold bg-red-600/20 text-red-500 px-2 py-1 rounded-md flex items-center gap-1 uppercase"><div class="w-1.5 h-1.5 rounded-full bg-red-500 live-dot"></div> Live Match</span>
-                    <span class="text-[10px] text-zinc-500">Half Time</span>
+                    <span class="text-[9px] font-extrabold bg-red-600/20 text-red-500 px-2 py-1 rounded-md flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-red-500 live-dot"></div> Live</span>
+                    <span class="text-[10px] text-zinc-500 font-bold">85'</span>
                 </div>
                 <div class="flex justify-between items-center font-bold text-sm mb-3"><span>FAR Rabat</span> <span class="text-red-500">1</span></div>
                 <div class="flex justify-between items-center font-bold text-sm"><span>Pyramids</span> <span class="text-zinc-500">0</span></div>
@@ -86,56 +73,68 @@
         </div>
     </section>
 
-    <section class="p-6 mx-5 rounded-[40px] bg-gradient-to-br from-indigo-900/30 to-purple-900/30 text-center border border-white/5 shadow-2xl">
+    <section class="p-6 mx-5 rounded-[40px] bg-gradient-to-br from-indigo-900/30 to-purple-900/30 text-center border border-white/5">
         <div class="grid grid-cols-3 gap-5 mb-8 place-items-center">
-            <div class="w-14 h-14 bg-red-600 rounded-2xl flex items-center justify-center hub-btn shadow-lg shadow-red-600/20"><i class="fa-brands fa-youtube text-lg"></i></div>
-            <div class="w-14 h-14 bg-purple-600 rounded-2xl flex items-center justify-center hub-btn shadow-lg shadow-purple-600/20"><i class="fa-solid fa-music text-lg"></i></div>
-            <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center hub-btn shadow-lg shadow-blue-600/20"><i class="fa-solid fa-clapperboard text-lg"></i></div>
-            <div class="w-14 h-14 bg-green-600 rounded-2xl flex items-center justify-center hub-btn shadow-lg shadow-green-600/20"><i class="fa-solid fa-download text-lg"></i></div>
-            <div class="w-14 h-14 bg-orange-600 rounded-2xl flex items-center justify-center hub-btn shadow-lg shadow-orange-600/20"><i class="fa-solid fa-microchip text-lg"></i></div>
-            <div class="w-14 h-14 bg-pink-600 rounded-2xl flex items-center justify-center hub-btn shadow-lg shadow-pink-600/20"><i class="fa-solid fa-headphones-simple text-lg"></i></div>
+            <div class="w-14 h-14 bg-red-600 rounded-2xl flex items-center justify-center"><i class="fa-brands fa-youtube"></i></div>
+            <div class="w-14 h-14 bg-purple-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-music"></i></div>
+            <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-clapperboard"></i></div>
+            <div class="w-14 h-14 bg-green-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-download"></i></div>
+            <div class="w-14 h-14 bg-orange-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-microchip"></i></div>
+            <div class="w-14 h-14 bg-pink-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-headphones"></i></div>
         </div>
-        <h3 class="text-2xl font-bold mb-3">Media Hub <span class="bg-red-500 text-[9px] px-2 py-1 rounded-md uppercase ml-1 align-middle">Beta</span></h3>
-        <p class="text-zinc-500 text-xs px-4 mb-8 leading-relaxed">Stream your favorite DJ Afro movies, YouTube videos, and music globally.</p>
-        <button class="bg-white/5 w-full py-4 rounded-2xl font-bold text-sm border border-white/10 active:scale-95 transition-all">Explore Popkid Hub <i class="fa-solid fa-chevron-right ml-2 text-[10px]"></i></button>
+        <h3 class="text-2xl font-bold mb-2">Media Hub <span class="bg-red-500 text-[9px] px-2 py-1 rounded-md ml-1">NEW</span></h3>
+        <p class="text-zinc-500 text-xs px-4 mb-8">Stream DJ Afro, YouTube, and Music all in one app.</p>
+        <button class="bg-white/5 w-full py-4 rounded-2xl font-bold text-sm border border-white/10 active:scale-95 transition-all">Explore Media Hub</button>
     </section>
 
-    <section class="p-6 mt-6">
-        <h3 class="font-black text-2xl mb-6 tracking-tighter italic text-zinc-300"><i class="fa-solid fa-fire-flame-curved text-orange-500 mr-2"></i> MOST PLAYED</h3>
-        <div id="mostPlayed" class="grid grid-cols-2 gap-5">
-            </div>
+    <section class="p-6">
+        <h3 class="font-black text-2xl mb-6 italic text-zinc-300">MOST PLAYED</h3>
+        <div id="mostPlayed" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5"></div>
     </section>
 
-    <div id="watchPanel" class="flex flex-col">
+    <div id="watchPanel">
         <div class="sticky top-0 z-[6000] p-6 flex justify-between">
-            <button onclick="closeWatch()" class="w-12 h-12 rounded-full glass flex items-center justify-center text-white shadow-2xl active:scale-90 transition-all"><i class="fa-solid fa-xmark"></i></button>
-            <button class="w-12 h-12 rounded-full glass flex items-center justify-center text-white shadow-2xl"><i class="fa-solid fa-share-nodes"></i></button>
+            <button onclick="closeWatch()" class="w-12 h-12 rounded-full glass flex items-center justify-center text-white"><i class="fa-solid fa-xmark"></i></button>
+            <button class="w-12 h-12 rounded-full glass flex items-center justify-center text-white"><i class="fa-solid fa-share-nodes"></i></button>
         </div>
-        <div id="playerArea" class="-mt-24">
-            </div>
+        <div id="playerArea" class="-mt-24"></div>
     </div>
+
+    <button id="installBtn" class="hidden fixed bottom-6 left-6 right-6 bg-green-600 py-4 rounded-2xl font-bold z-[4000] shadow-2xl active:scale-95 transition-all uppercase text-sm tracking-widest">Download Popkid 7.0 App</button>
 
     <script>
         const API_KEY = '29e4dc2f40c6d85baa182bb1e1f38911';
         const IMG = 'https://image.tmdb.org/t/p/w500';
 
-        // 1. APP INITIALIZATION
-        async function initApp() {
-            try {
-                const res = await fetch(`https://api.themoviedb.org/3/trending/all/day?api_key=${API_KEY}`);
-                const data = await res.json();
-                
-                // Set Hero
-                const topItem = data.results[0];
-                const hero = document.getElementById('hero');
-                hero.style.backgroundImage = `linear-gradient(to top, #08080a, transparent), url(https://image.tmdb.org/t/p/original${topItem.backdrop_path})`;
-                document.getElementById('heroTitle').innerText = topItem.title || topItem.name;
-                document.getElementById('heroYear').innerText = (topItem.release_date || topItem.first_air_date || '2026').split('-')[0];
-                document.getElementById('heroPlayBtn').onclick = () => openWatch(topItem.id, topItem.media_type || 'movie');
+        // 1. PWA INSTALL LOGIC
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').classList.remove('hidden');
+        });
 
-                // Render Grid
-                renderGrid(data.results.slice(1, 11), 'mostPlayed');
-            } catch (e) { console.error("Initialization Failed", e); }
+        document.getElementById('installBtn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') document.getElementById('installBtn').classList.add('hidden');
+                deferredPrompt = null;
+            }
+        });
+
+        // 2. CORE ENGINE
+        async function init() {
+            const res = await fetch(`https://api.themoviedb.org/3/trending/all/day?api_key=${API_KEY}`);
+            const data = await res.json();
+            const topItem = data.results[0];
+            
+            document.getElementById('hero').style.backgroundImage = `linear-gradient(to top, #08080a, transparent), url(https://image.tmdb.org/t/p/original${topItem.backdrop_path})`;
+            document.getElementById('heroTitle').innerText = topItem.title || topItem.name;
+            document.getElementById('heroYear').innerText = (topItem.release_date || topItem.first_air_date || '2026').split('-')[0];
+            document.getElementById('heroPlayBtn').onclick = () => openWatch(topItem.id, topItem.media_type || 'movie');
+
+            renderGrid(data.results.slice(1, 15), 'mostPlayed');
         }
 
         function renderGrid(items, targetId) {
@@ -144,113 +143,65 @@
                 if(!item.poster_path) return '';
                 const type = item.media_type || (item.title ? 'movie' : 'tv');
                 return `
-                <div onclick="openWatch(${item.id}, '${type}')" class="glass rounded-[32px] p-3 border-none shadow-xl active:scale-95 transition-all">
-                    <div class="relative rounded-[24px] overflow-hidden mb-4">
-                        <img src="${IMG + item.poster_path}" class="w-full h-56 object-cover">
-                        <span class="absolute top-3 left-3 bg-red-600 text-[8px] px-2 py-1 rounded-lg font-black uppercase tracking-widest">${type}</span>
-                    </div>
+                <div onclick="openWatch(${item.id}, '${type}')" class="glass rounded-[32px] p-3 border-none active:scale-95 transition-all">
+                    <img src="${IMG + item.poster_path}" class="w-full h-56 object-cover rounded-[24px] mb-3">
                     <h4 class="text-xs font-bold truncate px-1">${item.title || item.name}</h4>
-                    <div class="flex justify-between items-center text-[10px] mt-3 px-1">
-                        <span class="text-zinc-500 font-bold">${(item.release_date || item.first_air_date || '2026').split('-')[0]}</span>
-                        <span class="text-yellow-500 font-bold"><i class="fa-solid fa-star mr-1"></i> ${item.vote_average.toFixed(1)}</span>
+                    <div class="flex justify-between items-center text-[10px] mt-2 px-1 text-zinc-500">
+                        <span>${(item.release_date || item.first_air_date || '2026').split('-')[0]}</span>
+                        <span class="text-yellow-500 font-bold">⭐ ${item.vote_average.toFixed(1)}</span>
                     </div>
                 </div>`;
             }).join('');
         }
 
-        // 2. WATCH PAGE & EPISODE SYSTEM
         async function openWatch(id, type) {
             const res = await fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${API_KEY}&append_to_response=videos`);
             const item = await res.json();
-            
-            const panel = document.getElementById('watchPanel');
-            panel.classList.add('active');
+            document.getElementById('watchPanel').classList.add('active');
             document.body.style.overflow = 'hidden';
 
             let html = `
-                <iframe id="videoPlayer" src="https://vidsrc.to/embed/${type}/${id}" class="w-full aspect-video rounded-b-[40px] shadow-2xl" frameborder="0" allowfullscreen></iframe>
+                <iframe id="videoPlayer" src="https://vidsrc.to/embed/${type}/${id}" class="w-full aspect-video rounded-b-[40px]" frameborder="0" allowfullscreen></iframe>
                 <div class="p-8">
-                    <div class="flex justify-between items-start mb-4">
-                        <h2 class="text-3xl font-black tracking-tighter leading-none">${item.title || item.name}</h2>
-                        <span class="bg-red-600/10 text-red-500 text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-widest">4K</span>
-                    </div>
-                    <p class="text-xs text-zinc-500 mb-8 leading-relaxed font-medium">${item.overview}</p>
-                    
+                    <h2 class="text-3xl font-black mb-4">${item.title || item.name}</h2>
+                    <p class="text-xs text-zinc-500 mb-8 leading-relaxed">${item.overview}</p>
                     <div class="flex gap-4 mb-10">
-                        <button class="flex-1 bg-white text-black py-4 rounded-2xl font-black text-sm active:scale-95 transition-all">STREAM NOW</button>
-                        <a href="https://dl.vidsrc.to/get/${id}" target="_blank" class="w-16 glass rounded-2xl flex items-center justify-center text-xl active:bg-white/10"><i class="fa-solid fa-download"></i></a>
+                        <button class="flex-1 bg-white text-black py-4 rounded-2xl font-black text-sm active:scale-95 transition-all">PLAY NOW</button>
+                        <a href="https://dl.vidsrc.to/get/${id}" target="_blank" class="w-16 glass rounded-2xl flex items-center justify-center"><i class="fa-solid fa-download"></i></a>
                     </div>`;
 
             if(type === 'tv') {
-                html += `
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="font-bold text-sm tracking-widest uppercase text-zinc-500">Seasons</h3>
-                    <select onchange="fetchEpisodes(${id}, this.value)" class="bg-zinc-900 border border-white/5 p-3 rounded-xl text-xs outline-none">
-                        ${item.seasons.filter(s => s.season_number > 0).map(s => `<option value="${s.season_number}">${s.name}</option>`).join('')}
-                    </select>
-                </div>
-                <div id="epContainer" class="space-y-4 pb-20"></div>`;
-                setTimeout(() => fetchEpisodes(id, 1), 100);
+                html += `<div class="flex justify-between mb-4"><h3 class="font-bold text-sm">Episodes</h3><select onchange="loadEps(${id}, this.value)" class="bg-zinc-900 border border-white/5 p-2 rounded-xl text-xs outline-none">${item.seasons.filter(s => s.season_number > 0).map(s => `<option value="${s.season_number}">${s.name}</option>`).join('')}</select></div><div id="epContainer" class="space-y-4 pb-20"></div>`;
+                setTimeout(() => loadEps(id, 1), 100);
             }
             document.getElementById('playerArea').innerHTML = html + `</div>`;
         }
 
-        async function fetchEpisodes(id, s) {
-            const container = document.getElementById('epContainer');
-            container.innerHTML = `<p class="text-center py-10 text-zinc-700 animate-pulse text-xs font-bold uppercase">Syncing Server...</p>`;
+        async function loadEps(id, s) {
             const res = await fetch(`https://api.themoviedb.org/3/tv/${id}/season/${s}?api_key=${API_KEY}`);
             const data = await res.json();
-            
-            container.innerHTML = data.episodes.map(ep => `
-                <div onclick="switchVid(${id}, ${s}, ${ep.episode_number})" class="glass p-4 rounded-[28px] flex gap-5 items-center ep-card transition-all cursor-pointer">
-                    <div class="relative w-24 h-16 bg-zinc-900 rounded-2xl overflow-hidden flex-shrink-0">
-                        <img src="${ep.still_path ? IMG + ep.still_path : ''}" class="w-full h-full object-cover">
-                        <div class="absolute inset-0 bg-black/20 flex items-center justify-center"><i class="fa-solid fa-play text-[10px]"></i></div>
-                    </div>
-                    <div class="flex-1 overflow-hidden">
-                        <p class="text-xs font-black truncate uppercase tracking-tighter">${ep.name}</p>
-                        <p class="text-[10px] text-zinc-500 font-bold mt-1">Episode ${ep.episode_number}</p>
-                    </div>
+            document.getElementById('epContainer').innerHTML = data.episodes.map(ep => `
+                <div onclick="switchVid(${id}, ${s}, ${ep.episode_number})" class="glass p-4 rounded-[24px] flex gap-4 items-center cursor-pointer">
+                    <img src="${ep.still_path ? IMG + ep.still_path : ''}" class="w-20 h-12 rounded-xl object-cover">
+                    <div class="flex-1 overflow-hidden"><p class="text-xs font-bold truncate">${ep.name}</p><p class="text-[10px] text-zinc-600">Episode ${ep.episode_number}</p></div>
                 </div>`).join('');
         }
 
-        // 3. UTILITIES
-        function switchVid(id, s, e) {
-            document.getElementById('videoPlayer').src = `https://vidsrc.to/embed/tv/${id}/${s}/${e}`;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function toggleSearch(show) {
-            const overlay = document.getElementById('searchOverlay');
-            if(show) overlay.classList.add('active');
-            else overlay.classList.remove('active');
-        }
-
+        function switchVid(id, s, e) { document.getElementById('videoPlayer').src = `https://vidsrc.to/embed/tv/${id}/${s}/${e}`; window.scrollTo({top:0, behavior:'smooth'}); }
+        function toggleSearch(show) { document.getElementById('searchOverlay').classList.toggle('active', show); }
+        function closeWatch() { document.getElementById('watchPanel').classList.remove('active'); document.body.style.overflow = 'auto'; }
+        
         async function handleSearch() {
             const q = document.getElementById('searchBox').value;
             if(q.length > 2) {
                 const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${q}`);
                 const data = await res.json();
-                const grid = document.getElementById('searchGrid');
-                grid.innerHTML = data.results.map(item => {
-                    if(!item.poster_path) return '';
-                    return `
-                    <div onclick="openWatch(${item.id}, '${item.media_type}')" class="glass p-2 rounded-2xl active:scale-95 transition-all">
-                        <img src="${IMG + item.poster_path}" class="w-full h-44 object-cover rounded-xl mb-3">
-                        <h4 class="text-[10px] font-bold truncate px-1 uppercase">${item.title || item.name}</h4>
-                    </div>`;
-                }).join('');
+                renderGrid(data.results, 'searchGrid');
             }
         }
 
-        function closeWatch() {
-            document.getElementById('watchPanel').classList.remove('active');
-            document.body.style.overflow = 'auto';
-            setTimeout(() => { document.getElementById('playerArea').innerHTML = ''; }, 500);
-        }
-
-        // Boot App
-        initApp();
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+        init();
     </script>
 </body>
 </html>
