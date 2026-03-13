@@ -1,0 +1,16 @@
+{
+  "name": "Popkid 7.0 Media",
+  "short_name": "Popkid",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#08080a",
+  "theme_color": "#ff0000",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/popkidmd/POPKID-XD/main/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
